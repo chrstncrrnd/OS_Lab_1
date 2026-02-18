@@ -4,35 +4,45 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <stdlib.h>
 
 // TODO: preguntar profe error codes
-#define DIV_ZERO_ERROR_CODE -2
-#define FATAL_ERROR_CODE -1
-#define PARAM_ERROR_CODE -3
+#define FATAL_ERROR_CODE 		-1
+#define DIV_ZERO_ERROR_CODE 	-2
+#define PARAM_ERROR_CODE 		-3
+#define FILE_OPEN_ERROR_CODE 	-4
+#define FILE_CLOSE_ERROR_CODE 	-5
+#define FILE_WRITE_ERROR_CODE 	-6
+#define INCORRECT_PARAM_ERROR   -7
 
 
-#define false 0
-#define true 1
-#define bool int
+#define false 	0
+#define true 	1
+#define bool 	int
+
+#define BUFSIZE 512
+
 
 const char *log_file = "mycalc.log";
 
-int _strlen(char *input){
+
+// Returns the length of the string `input`, not the size that it occupies in memory
+int _strlen(char *input) {
 	int out = 0;
-	for (int i = 0; input[i] != '\0' ; i++){
+	for (int i = 0; input[i] != '\0' ; i++) {
 		out += 1;
 	}
 	return out;
 }
 
-bool _strcmp(char* a, char* b){
+
+// Compares two strings `a` and `b` returns true if all characters are equal
+bool _strcmp(char* a, char* b) {
 	int len_a = _strlen(a);
-	if (len_a != _strlen(b)){
+	if (len_a != _strlen(b)) {
 		return false;
 	}
-	for (int i = 0; i < len_a; i ++){
-		if (a[i] != b[i]){
+	for (int i = 0; i < len_a; i ++) {
+		if (a[i] != b[i]) {
 			return false;
 		}
 	}
@@ -40,59 +50,79 @@ bool _strcmp(char* a, char* b){
 }
 
 
-
-void _strcpy(char *to, char *from, int offset){
-	for (int i = offset; i < _strlen(from) + offset; i++){
+// Copies the contents of the second argument, `from`, to the memory positions of `to` starting from `offset`
+void _strcpy(char *to, char *from, int offset) {
+	for (int i = offset; i < _strlen(from) + offset; i++) {
 		to[i] = from[i - offset];
 	}	
 }
 
 
-// overwrites lhs
-void _strappend(char *lhs, char *rhs){
+// Appends the string `rhs` to the string `lhs`. Result is stored in `lhs`.
+void _strappend(char *lhs, char *rhs) {
 	_strcpy(lhs, rhs, _strlen(lhs));
 }
 
-int _atoi(char *input){
+
+bool isNumber(){
+
+}
+
+// Ascii to integer, get integer value of ascii.
+// Raises error if one of the characters is not a digit
+int _atoi(char *input) {
 	int out = 0;
-	for (int i = 0; i < _strlen(input); i++){
-		out += input[i] - '0';
+	for (int i = 0; i < _strlen(input); i++) {
+		char c = input[i];
+		if (c > '9' || c < '0'){
+			fprintf(stderr, "Tried to convet non digit character to integer.");
+			_exit(INCORRECT_PARAM_ERROR);
+		}
+		out += c - '0';
 		out *= 10;
 	}
 	return out / 10;
 }
 
-int digits(int input){
+
+// Returns the number of digits in the input
+int digits(int input) {
 	int i = 0;
-	for (; input > 0; input /= 10){
+	for (; input > 0; input /= 10) {
 		i++;
 	}
 	return i;
 }
 
-void _itoa(int input, char* buf){
+
+// Integer to ascii, writes the ascii value of `input` to `buf`.
+void _itoa(int input, char* buf) {
 	int digs = digits(input);
-	for (int i = digs; input > 0; input /= 10){
+	for (int i = digs; input > 0; input /= 10) {
 		buf[--i] = (char) (input % 10) + '0';
 	}
 	buf[digs] = '\0';
 }
 
+
 // TODO: Pregunar profe si esto es error
-void print_usage(char *bin_name){
+// Function to print how to use the binary
+void print_usage(char *bin_name) {
 	printf("Usage (1): %s <num1> <operation (+, -, x, /)> <num2> \n", bin_name);
 	printf("Usage (2): %s -b <num operation> \n", bin_name);
 }
 
-// TODO: error handling
-void append_file(char* a_s, char op, char* b_s, int res){
+
+// Appends a result entry to the log file. 
+// Raises errors for when the file is not found, cannot close file or cannot write to file.
+void append_file(char* a_s, char op, char* b_s, int res) {
 	int fd = open(log_file, O_CREAT | O_WRONLY | O_APPEND, 0644);
-	if (fd < 0){
+	if (fd < 0) {
 		perror("Error, could not open file!");
+		_exit(FILE_WRITE_ERROR_CODE);
 	}
 
-
-	char buf[512] = "Operation: ";
+	char buf[BUFSIZE] = "Operation: ";
 
 	char r_s[32];
 	_itoa(res, r_s);
@@ -111,21 +141,26 @@ void append_file(char* a_s, char op, char* b_s, int res){
 	_strappend(buf, "\n");
 	
 	ssize_t err1 = write(fd, buf,(size_t) _strlen(buf));
-	if (err1 < 0){
+	if (err1 < 0) {
 		perror("Error writing to file: ");
+		_exit(FILE_WRITE_ERROR_CODE);
 	}
 	
 	int err2 = close(fd);
-	if (err2 < 0){
-		perror("Error closing file: ");
+
+	if (err2 < 0) {
+		perror("Error closing file");
+		_exit(FILE_CLOSE_ERROR_CODE);
 	}
 }
 
-void operation_mode(char *argv[]){
+
+// Routine to handle the main mode of the calculator
+void operation_mode(char *argv[]) {
 	int a = _atoi(argv[1]);
 	int b = _atoi(argv[3]);
 	
-	if (_strlen(argv[2]) != 1){
+	if (_strlen(argv[2]) != 1) {
 		fprintf(stderr, "Parameter error!, use +, -, x or /\n");
 		print_usage(argv[0]);
 		_exit(PARAM_ERROR_CODE);
@@ -134,7 +169,7 @@ void operation_mode(char *argv[]){
 	char op = *argv[2];
 	int res;
 
-	switch (op){
+	switch (op) {
 		case '+':
 			res = a + b;
 			break;
@@ -145,7 +180,7 @@ void operation_mode(char *argv[]){
 			res = a * b;
 			break;
 		case '/':
-			if (b == 0){
+			if (b == 0) {
 				fprintf(stderr, "Error: Division by zero\n");
 				_exit(DIV_ZERO_ERROR_CODE);
 			}
@@ -163,11 +198,19 @@ void operation_mode(char *argv[]){
 
 }
 
-void history_mode(char *argv[]){
-	printf("TODO!\n");
-	char *a = argv[0];
-	printf("a: %s\n", a);
+char * search_history(int n) {
+	int fd = open(log_file, O_RDONLY);
+	char buf[BUFSIZE];
 }
+
+
+// Routine to handle the history mode of the calculator.
+void history_mode(char *argv[]) {
+	int n = _atoi(argv[2]);
+	char *find = search_history(n);
+	printf("%s\n", find);
+}
+
 
 int main(int argc, char *argv[]) {
 	if (argc != 4 && argc != 3){
