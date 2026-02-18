@@ -2,8 +2,6 @@
 #include <unistd.h>
 #include <stdio.h>
 
-#include <sys/types.h>
-#include <sys/stat.h>
 
 // TODO: preguntar profe error codes
 #define FATAL_ERROR_CODE 		-1
@@ -13,16 +11,18 @@
 #define FILE_CLOSE_ERROR_CODE 	-5
 #define FILE_WRITE_ERROR_CODE 	-6
 #define INCORRECT_PARAM_ERROR   -7
-
+#define FILE_READ_ERROR_CODE    -8
+#define HISTORY_NOT_FOUND_ERROR -9
 
 #define false 	0
 #define true 	1
 #define bool 	int
 
-#define BUFSIZE 512
+#define BUFSIZE 64
 
 
 const char *log_file = "mycalc.log";
+
 
 
 // Returns the length of the string `input`, not the size that it occupies in memory
@@ -64,10 +64,7 @@ void _strappend(char *lhs, char *rhs) {
 }
 
 
-bool isNumber(){
-
-}
-
+// TODO preguntar profe sobre esto y si debe poner el print usage.
 // Ascii to integer, get integer value of ascii.
 // Raises error if one of the characters is not a digit
 int _atoi(char *input) {
@@ -75,7 +72,7 @@ int _atoi(char *input) {
 	for (int i = 0; i < _strlen(input); i++) {
 		char c = input[i];
 		if (c > '9' || c < '0'){
-			fprintf(stderr, "Tried to convet non digit character to integer.");
+			fprintf(stderr, "Tried to convet non digit character to integer.\n");
 			_exit(INCORRECT_PARAM_ERROR);
 		}
 		out += c - '0';
@@ -124,7 +121,7 @@ void append_file(char* a_s, char op, char* b_s, int res) {
 
 	char buf[BUFSIZE] = "Operation: ";
 
-	char r_s[32];
+	char r_s[16];
 	_itoa(res, r_s);
 	
 	char o_s[2];
@@ -198,17 +195,62 @@ void operation_mode(char *argv[]) {
 
 }
 
-char * search_history(int n) {
+
+void get_line(int fd, char * buffer){
+	char buf[2];
+	ssize_t n_read;
+	while( (n_read = read(fd, buf, 1)) > 0){
+		if (buf[0] == '\n'){
+			break;
+		}
+		_strappend(buffer, buf);
+	}
+	if (n_read < 0){
+		perror("Error reading file");
+		_exit(FILE_READ_ERROR_CODE);
+	}
+}
+
+
+// TODO: comprobar edge cases
+void search_history(int n, char * buffer) {
 	int fd = open(log_file, O_RDONLY);
-	char buf[BUFSIZE];
+	char buf[1];
+	ssize_t n_read;
+	int lines_read = 0;
+	while( (n_read = read(fd, buf, 1)) > 0){
+		if (_strcmp(buf, "\n")){
+			lines_read += 1;
+		}
+		if (lines_read == n-1){
+			if (lines_read == 0){
+				int err = lseek(fd, -1, SEEK_CUR);
+				if (err < 0){
+					perror("Couldn't seek back!");
+					_exit(FILE_READ_ERROR_CODE);	
+				}
+			}
+			return get_line(fd, buffer);
+		}
+	}
+	if (n_read < 0){
+		perror("Error reading file");
+		_exit(FILE_READ_ERROR_CODE);
+	}
 }
 
 
 // Routine to handle the history mode of the calculator.
 void history_mode(char *argv[]) {
 	int n = _atoi(argv[2]);
-	char *find = search_history(n);
-	printf("%s\n", find);
+	char buffer[BUFSIZE] = "";
+	search_history(n, buffer);
+	if (_strcmp(buffer, "")){
+		fprintf(stderr, "History entry not found\n");
+		_exit(HISTORY_NOT_FOUND_ERROR);
+	}else{
+		printf("Line %d: %s\n", n, buffer);
+	}
 }
 
 
