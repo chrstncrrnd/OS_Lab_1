@@ -2,6 +2,8 @@
 #include <unistd.h>
 #include <stdio.h>
 
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <stdlib.h>
 
 // TODO: preguntar profe error codes
@@ -15,8 +17,6 @@
 #define bool int
 
 const char *log_file = "mycalc.log";
-
-
 
 int _strlen(char *input){
 	int out = 0;
@@ -39,6 +39,20 @@ bool _strcmp(char* a, char* b){
 	return true;
 }
 
+
+
+void _strcpy(char *to, char *from, int offset){
+	for (int i = offset; i < _strlen(from) + offset; i++){
+		to[i] = from[i - offset];
+	}	
+}
+
+
+// overwrites lhs
+void _strappend(char *lhs, char *rhs){
+	_strcpy(lhs, rhs, _strlen(lhs));
+}
+
 int _atoi(char *input){
 	int out = 0;
 	for (int i = 0; i < _strlen(input); i++){
@@ -48,26 +62,78 @@ int _atoi(char *input){
 	return out / 10;
 }
 
+int digits(int input){
+	int i = 0;
+	for (; input > 0; input /= 10){
+		i++;
+	}
+	return i;
+}
+
+void _itoa(int input, char* buf){
+	int digs = digits(input);
+	for (int i = digs; input > 0; input /= 10){
+		buf[--i] = (input % 10) + '0';
+	}
+	buf[digs] = '\0';
+}
+
 // TODO: Pregunar profe si esto es error
 void print_usage(char *bin_name){
 	printf("Usage (1): %s <num1> <operation (+, -, x, /)> <num2> \n", bin_name);
 	printf("Usage (2): %s -b <num operation> \n", bin_name);
 }
 
+// TODO: error handling
+void append_file(char* a_s, char op, char* b_s, int res){
+	int fd = open(log_file, O_CREAT | O_WRONLY | O_APPEND, 0644);
+
+	char buf[512] = "Operation: ";
+
+	// char a_s[16];
+	// _itoa(a, a_s);
+
+	// char b_s[16];
+	// _itoa(b, b_s);
+
+	char r_s[32];
+	_itoa(res, r_s);
+	
+	char o_s[1];
+	o_s[0] = op;
+	o_s[1] = '\0';
+	
+	_strappend(buf, a_s);
+	_strappend(buf, " ");
+	_strappend(buf, o_s);
+	_strappend(buf, " ");
+	_strappend(buf, b_s);
+	_strappend(buf, " = ");
+	_strappend(buf, r_s);
+	_strappend(buf, "\n");
+	
+	int err1 = write(fd, buf, _strlen(buf));
+	if (err1 < 0){
+		perror("Error writing to file: ");
+	}
+	
+	int err2 = close(fd);
+	if (err2 < 0){
+		perror("Error closing file: ");
+	}
+}
+
 void operation_mode(char *argv[]){
 	int a = _atoi(argv[1]);
 	int b = _atoi(argv[3]);
-	// if (sizeof(argv[3]) != sizeof(char)){
-	// 	fprintf(stderr, "Parameter error!, use +, -, x or /");
-	// 	print_usage(argv[0]);
-	// }
+	
 	if (_strlen(argv[2]) != 1){
 		fprintf(stderr, "Parameter error!, use +, -, x or /\n");
 		print_usage(argv[0]);
 		_exit(PARAM_ERROR_CODE);
 	}
+	
 	char op = *argv[2];
-
 	int res;
 
 	switch (op){
@@ -93,8 +159,9 @@ void operation_mode(char *argv[]){
 			_exit(PARAM_ERROR_CODE);
 	}
 
-
 	printf("Operation: %d %c %d = %d\n", a, op, b, res);
+	append_file(argv[1], op, argv[3], res);
+
 
 }
 
