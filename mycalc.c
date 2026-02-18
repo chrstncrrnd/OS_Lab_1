@@ -73,7 +73,7 @@ int digits(int input){
 void _itoa(int input, char* buf){
 	int digs = digits(input);
 	for (int i = digs; input > 0; input /= 10){
-		buf[--i] = (input % 10) + '0';
+		buf[--i] = (char) (input % 10) + '0';
 	}
 	buf[digs] = '\0';
 }
@@ -87,19 +87,17 @@ void print_usage(char *bin_name){
 // TODO: error handling
 void append_file(char* a_s, char op, char* b_s, int res){
 	int fd = open(log_file, O_CREAT | O_WRONLY | O_APPEND, 0644);
+	if (fd < 0){
+		perror("Error, could not open file!");
+	}
+
 
 	char buf[512] = "Operation: ";
-
-	// char a_s[16];
-	// _itoa(a, a_s);
-
-	// char b_s[16];
-	// _itoa(b, b_s);
 
 	char r_s[32];
 	_itoa(res, r_s);
 	
-	char o_s[1];
+	char o_s[2];
 	o_s[0] = op;
 	o_s[1] = '\0';
 	
@@ -112,7 +110,7 @@ void append_file(char* a_s, char op, char* b_s, int res){
 	_strappend(buf, r_s);
 	_strappend(buf, "\n");
 	
-	int err1 = write(fd, buf, _strlen(buf));
+	ssize_t err1 = write(fd, buf,(size_t) _strlen(buf));
 	if (err1 < 0){
 		perror("Error writing to file: ");
 	}
