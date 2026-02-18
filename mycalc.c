@@ -7,7 +7,7 @@
 #include <stdlib.h>
 
 // TODO: preguntar profe error codes
-#define DEV_ZERO_ERROR_CODE -2
+#define DIV_ZERO_ERROR_CODE -2
 #define FATAL_ERROR_CODE -1
 #define PARAM_ERROR_CODE -3
 
@@ -147,7 +147,7 @@ void operation_mode(char *argv[]){
 		case '/':
 			if (b == 0){
 				fprintf(stderr, "Error: Division by zero\n");
-				_exit(DEV_ZERO_ERROR_CODE);
+				_exit(DIV_ZERO_ERROR_CODE);
 			}
 			res = a / b;
 			break;
