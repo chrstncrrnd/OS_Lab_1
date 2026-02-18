@@ -50,7 +50,7 @@ int _atoi(char *input){
 
 // TODO: Pregunar profe si esto es error
 void print_usage(char *bin_name){
-	printf("Usage (1): %s <num1> <operation (+ | - | x | /)> <num2> \n", bin_name);
+	printf("Usage (1): %s <num1> <operation (+, -, x, /)> <num2> \n", bin_name);
 	printf("Usage (2): %s -b <num operation> \n", bin_name);
 }
 
