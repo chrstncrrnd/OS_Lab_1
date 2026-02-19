@@ -3,10 +3,10 @@
 #include <stdio.h>
 
 // TODO: preguntar profe error codes
-#define FATAL_ERROR_CODE 		-1
-#define DIV_ZERO_ERROR_CODE 	-2
-#define PARAM_ERROR_CODE 		-3
-#define FILE_OPEN_ERROR_CODE 	-4
+#define FATAL_ERROR_CODE 		    -1
+#define DIV_ZERO_ERROR_CODE 	  -2
+#define PARAM_ERROR_CODE 		    -3
+#define FILE_OPEN_ERROR_CODE 	  -4
 #define FILE_CLOSE_ERROR_CODE 	-5
 #define FILE_WRITE_ERROR_CODE 	-6
 #define INCORRECT_PARAM_ERROR   -7
@@ -220,13 +220,14 @@ void search_history(int n, char * buffer) {
 		}
 		if (lines_read == n-1){
 			if (lines_read == 0){
-				int err = lseek(fd, -1, SEEK_CUR);
+				long err = lseek(fd, -1, SEEK_CUR);
 				if (err < 0){
 					perror("Couldn't seek back!");
 					_exit(FILE_READ_ERROR_CODE);	
 				}
 			}
-			return get_line(fd, buffer);
+			get_line(fd, buffer);
+      return;
 		}
 	}
 	if (n_read < 0){
