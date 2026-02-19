@@ -2,16 +2,16 @@
 #include <unistd.h>
 #include <stdio.h>
 
-// TODO: preguntar profe error codes
-#define FATAL_ERROR_CODE 		    -1
-#define DIV_ZERO_ERROR_CODE 	  -2
-#define PARAM_ERROR_CODE 		    -3
-#define FILE_OPEN_ERROR_CODE 	  -4
-#define FILE_CLOSE_ERROR_CODE 	-5
-#define FILE_WRITE_ERROR_CODE 	-6
-#define INCORRECT_PARAM_ERROR   -7
-#define FILE_READ_ERROR_CODE    -8
-#define HISTORY_NOT_FOUND_ERROR -9
+// ups
+#define FATAL_ERROR_CODE 		-1
+#define DIV_ZERO_ERROR_CODE 	-1
+#define PARAM_ERROR_CODE 		-1
+#define FILE_OPEN_ERROR_CODE 	-1
+#define FILE_CLOSE_ERROR_CODE 	-1
+#define FILE_WRITE_ERROR_CODE 	-1
+#define INCORRECT_PARAM_ERROR   -1
+#define FILE_READ_ERROR_CODE    -1
+#define HISTORY_NOT_FOUND_ERROR -1
 
 #define false 	0
 #define true 	1
@@ -23,7 +23,7 @@ const char *log_file = "mycalc.log";
 
 
 // Returns the length of the string `input`, not the size that it occupies in memory
-int _strlen(char *input) {
+int _strlen(const char *input) {
 	int out = 0;
 	for (int i = 0; input[i] != '\0' ; i++) {
 		out += 1;
@@ -33,7 +33,7 @@ int _strlen(char *input) {
 
 
 // Compares two strings `a` and `b` returns true if all characters are equal
-bool _strcmp(char* a, char* b) {
+bool _strcmp(const char* a, const char* b) {
 	int len_a = _strlen(a);
 	if (len_a != _strlen(b)) {
 		return false;
@@ -48,7 +48,7 @@ bool _strcmp(char* a, char* b) {
 
 
 // Copies the contents of the second argument, `from`, to the memory positions of `to` starting from `offset`
-void _strcpy(char *to, char *from, int offset) {
+void _strcpy(char *to, const char *from, int offset) {
 	for (int i = offset; i < _strlen(from) + offset; i++) {
 		to[i] = from[i - offset];
 	}	
@@ -56,7 +56,7 @@ void _strcpy(char *to, char *from, int offset) {
 
 
 // Appends the string `rhs` to the string `lhs`. Result is stored in `lhs`.
-void _strappend(char *lhs, char *rhs) {
+void _strappend(char *lhs, const char *rhs) {
 	_strcpy(lhs, rhs, _strlen(lhs));
 }
 
@@ -64,7 +64,7 @@ void _strappend(char *lhs, char *rhs) {
 // TODO preguntar profe sobre esto y si debe poner el print usage.
 // Ascii to integer, get integer value of ascii.
 // Raises error if one of the characters is not a digit
-int _atoi(char *input) {
+int _atoi(const char *input) {
 	int out = 0;
 	for (int i = 0; i < _strlen(input); i++) {
 		char c = input[i];
@@ -101,7 +101,7 @@ void _itoa(int input, char* buf) {
 
 // TODO: Pregunar profe si esto es error
 // Function to print how to use the binary
-void print_usage(char *bin_name) {
+void print_usage(const char *bin_name) {
 	printf("Usage (1): %s <num1> <operation (+, -, x, /)> <num2> \n", bin_name);
 	printf("Usage (2): %s -b <num operation> \n", bin_name);
 }
@@ -109,7 +109,7 @@ void print_usage(char *bin_name) {
 
 // Appends a result entry to the log file. 
 // Raises errors for when the file is not found, cannot close file or cannot write to file.
-void append_file(char* a_s, char op, char* b_s, int res) {
+void append_file(const char* a_s, char op, const char* b_s, int res) {
 	int fd = open(log_file, O_CREAT | O_WRONLY | O_APPEND, 0644);
 	if (fd < 0) {
 		perror("Error, could not open file!");
@@ -150,7 +150,7 @@ void append_file(char* a_s, char op, char* b_s, int res) {
 
 
 // Routine to handle the main mode of the calculator
-void operation_mode(char *argv[]) {
+void operation_mode(const char *argv[]) {
 	int a = _atoi(argv[1]);
 	int b = _atoi(argv[3]);
 	
