@@ -2,7 +2,6 @@
 #include <unistd.h>
 #include <stdio.h>
 
-
 // TODO: preguntar profe error codes
 #define FATAL_ERROR_CODE 		-1
 #define DIV_ZERO_ERROR_CODE 	-2
@@ -20,9 +19,7 @@
 
 #define BUFSIZE 64
 
-
 const char *log_file = "mycalc.log";
-
 
 
 // Returns the length of the string `input`, not the size that it occupies in memory
@@ -191,7 +188,6 @@ void operation_mode(char *argv[]) {
 
 	printf("Operation: %d %c %d = %d\n", a, op, b, res);
 	append_file(argv[1], op, argv[3], res);
-
 
 }
 
