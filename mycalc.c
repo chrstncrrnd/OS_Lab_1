@@ -23,7 +23,7 @@ const char *log_file = "mycalc.log";
 
 
 // Returns the length of the string `input`, not the size that it occupies in memory
-int _strlen(const char *input) {
+int my_strlen(const char *input) {
 	int out = 0;
 	for (int i = 0; input[i] != '\0' ; i++) {
 		out += 1;
@@ -33,9 +33,9 @@ int _strlen(const char *input) {
 
 
 // Compares two strings `a` and `b` returns true if all characters are equal
-bool _strcmp(const char* a, const char* b) {
-	int len_a = _strlen(a);
-	if (len_a != _strlen(b)) {
+bool my_strcmp(const char* a, const char* b) {
+	int len_a = my_strlen(a);
+	if (len_a != my_strlen(b)) {
 		return false;
 	}
 	for (int i = 0; i < len_a; i ++) {
@@ -48,25 +48,25 @@ bool _strcmp(const char* a, const char* b) {
 
 
 // Copies the contents of the second argument, `from`, to the memory positions of `to` starting from `offset`
-void _strcpy(char *to, const char *from, int offset) {
-	for (int i = offset; i < _strlen(from) + offset; i++) {
+void my_strcpy(char *to, const char *from, int offset) {
+	for (int i = offset; i < my_strlen(from) + offset; i++) {
 		to[i] = from[i - offset];
 	}	
 }
 
 
 // Appends the string `rhs` to the string `lhs`. Result is stored in `lhs`.
-void _strappend(char *lhs, const char *rhs) {
-	_strcpy(lhs, rhs, _strlen(lhs));
+void my_strappend(char *lhs, const char *rhs) {
+	my_strcpy(lhs, rhs, my_strlen(lhs));
 }
 
 
 // TODO preguntar profe sobre esto y si debe poner el print usage.
 // Ascii to integer, get integer value of ascii.
 // Raises error if one of the characters is not a digit
-int _atoi(const char *input) {
+int my_atoi(const char *input) {
 	int out = 0;
-	for (int i = 0; i < _strlen(input); i++) {
+	for (int i = 0; i < my_strlen(input); i++) {
 		char c = input[i];
 		if (c > '9' || c < '0'){
 			fprintf(stderr, "Tried to convet non digit character to integer.\n");
@@ -90,7 +90,7 @@ int digits(int input) {
 
 
 // Integer to ascii, writes the ascii value of `input` to `buf`.
-void _itoa(int input, char* buf) {
+void my_itoa(int input, char* buf) {
 	int digs = digits(input);
 	for (int i = digs; input > 0; input /= 10) {
 		buf[--i] = (char) (input % 10) + '0';
@@ -119,22 +119,22 @@ void append_file(const char* a_s, char op, const char* b_s, int res) {
 	char buf[BUFSIZE] = "Operation: ";
 
 	char r_s[16];
-	_itoa(res, r_s);
+	my_itoa(res, r_s);
 	
 	char o_s[2];
 	o_s[0] = op;
 	o_s[1] = '\0';
 	
-	_strappend(buf, a_s);
-	_strappend(buf, " ");
-	_strappend(buf, o_s);
-	_strappend(buf, " ");
-	_strappend(buf, b_s);
-	_strappend(buf, " = ");
-	_strappend(buf, r_s);
-	_strappend(buf, "\n");
+	my_strappend(buf, a_s);
+	my_strappend(buf, " ");
+	my_strappend(buf, o_s);
+	my_strappend(buf, " ");
+	my_strappend(buf, b_s);
+	my_strappend(buf, " = ");
+	my_strappend(buf, r_s);
+	my_strappend(buf, "\n");
 	
-	ssize_t err1 = write(fd, buf,(size_t) _strlen(buf));
+	ssize_t err1 = write(fd, buf,(size_t) my_strlen(buf));
 	if (err1 < 0) {
 		perror("Error writing to file: ");
 		_exit(FILE_WRITE_ERROR_CODE);
@@ -151,10 +151,10 @@ void append_file(const char* a_s, char op, const char* b_s, int res) {
 
 // Routine to handle the main mode of the calculator
 void operation_mode(const char *argv[]) {
-	int a = _atoi(argv[1]);
-	int b = _atoi(argv[3]);
+	int a = my_atoi(argv[1]);
+	int b = my_atoi(argv[3]);
 	
-	if (_strlen(argv[2]) != 1) {
+	if (my_strlen(argv[2]) != 1) {
 		fprintf(stderr, "Parameter error!, use +, -, x or /\n");
 		print_usage(argv[0]);
 		_exit(PARAM_ERROR_CODE);
@@ -199,7 +199,7 @@ void get_line(int fd, char * buffer){
 		if (buf[0] == '\n'){
 			break;
 		}
-		_strappend(buffer, buf);
+		my_strappend(buffer, buf);
 	}
 	if (n_read < 0){
 		perror("Error reading file");
@@ -215,7 +215,7 @@ void search_history(int n, char * buffer) {
 	ssize_t n_read;
 	int lines_read = 0;
 	while( (n_read = read(fd, buf, 1)) > 0){
-		if (_strcmp(buf, "\n")){
+		if (my_strcmp(buf, "\n")){
 			lines_read += 1;
 		}
 		if (lines_read == n-1){
@@ -239,10 +239,10 @@ void search_history(int n, char * buffer) {
 
 // Routine to handle the history mode of the calculator.
 void history_mode(char *argv[]) {
-	int n = _atoi(argv[2]);
+	int n = my_atoi(argv[2]);
 	char buffer[BUFSIZE] = "";
 	search_history(n, buffer);
-	if (_strcmp(buffer, "")){
+	if (my_strcmp(buffer, "")){
 		fprintf(stderr, "History entry not found\n");
 		_exit(HISTORY_NOT_FOUND_ERROR);
 	}else{
@@ -260,7 +260,7 @@ int main(int argc, char *argv[]) {
 
   	switch (argc){
 		case 3:
-			if (_strcmp(argv[1], "-b")) {
+			if (my_strcmp(argv[1], "-b")) {
 				history_mode(argv);
 				break;
 			} else {

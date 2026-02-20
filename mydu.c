@@ -25,7 +25,7 @@ const char *binary_file = "mydu.bin";
 
 
 // Returns the length of the string `input`, not the size that it occupies in memory
-int _strlen(const char *input) {
+int my_strlen(const char *input) {
 	int out = 0;
 	for (int i = 0; input[i] != '\0' ; i++) {
 		out += 1;
@@ -33,9 +33,9 @@ int _strlen(const char *input) {
 	return out;
 }
 
-bool _strcmp(const char* a, const char* b) {
-	int len_a = _strlen(a);
-	if (len_a != _strlen(b)) {
+bool my_strcmp(const char* a, const char* b) {
+	int len_a = my_strlen(a);
+	if (len_a != my_strlen(b)) {
 		return false;
 	}
 	for (int i = 0; i < len_a; i ++) {
@@ -47,16 +47,16 @@ bool _strcmp(const char* a, const char* b) {
 }
 
 // Copies the contents of the second argument, `from`, to the memory positions of `to` starting from `offset`
-void _strcpy(char *to, const char *from, int offset) {
-	for (int i = offset; i < _strlen(from) + offset; i++) {
+void my_strcpy(char *to, const char *from, int offset) {
+	for (int i = offset; i < my_strlen(from) + offset; i++) {
 		to[i] = from[i - offset];
 	}	
 }
 
 
 // Appends the string `rhs` to the string `lhs`. Result is stored in `lhs`.
-void _strappend(char *lhs, const char *rhs) {
-	_strcpy(lhs, rhs, _strlen(lhs));
+void my_strappend(char *lhs, const char *rhs) {
+	my_strcpy(lhs, rhs, my_strlen(lhs));
 }
 
 
@@ -75,20 +75,20 @@ int print_directory_rec(const char directory[DIR_STR_SIZE]) {
         // 4 for directories
 		// 8 for files
         if (entry->d_type == 4) {
-            if (_strcmp(entry->d_name, ".") || _strcmp(entry->d_name, "..")) {
+            if (my_strcmp(entry->d_name, ".") || my_strcmp(entry->d_name, "..")) {
                 continue;
             }
             char new_dir_str[DIR_STR_SIZE] = "";
-            _strcpy(new_dir_str, directory, 0);
-            _strappend(new_dir_str, "/");
-            _strappend(new_dir_str, entry->d_name);
+            my_strcpy(new_dir_str, directory, 0);
+            my_strappend(new_dir_str, "/");
+            my_strappend(new_dir_str, entry->d_name);
             size += print_directory_rec(new_dir_str);
         } else if (entry->d_type == 8){
             stat_t buf;
             char fname[DIR_STR_SIZE] = "";
-            _strcpy(fname, directory, 0);
-            _strappend(fname, "/");
-            _strappend(fname, entry->d_name);
+            my_strcpy(fname, directory, 0);
+            my_strappend(fname, "/");
+            my_strappend(fname, entry->d_name);
             int err = stat(fname, &buf);
             if (err < 0) {
                 perror("Error reading file size");
@@ -120,7 +120,7 @@ int main(int argc, char *argv[]) {
             print_directory_rec(".");
 			break;
 		case 2:
-			if (_strcmp(argv[1], "-b")) {
+			if (my_strcmp(argv[1], "-b")) {
 				print_bin_content();
 			} else {
             	print_directory_rec(argv[1]);
