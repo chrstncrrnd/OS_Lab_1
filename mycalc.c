@@ -1,6 +1,5 @@
 #include <fcntl.h> /* To use open, read, write, close */
 #include <unistd.h>
-#include <stdio.h>
 
 // ups
 #define FATAL_ERROR_CODE 		-1
