@@ -22,6 +22,7 @@
 const char *log_file = "mycalc.log";
 
 
+
 // Returns the length of the string `input`, not the size that it occupies in memory
 int my_strlen(const char *input) {
 	int out = 0;
@@ -59,6 +60,12 @@ void my_strcpy(char *to, const char *from, int offset) {
 void my_strappend(char *lhs, const char *rhs) {
 	my_strcpy(lhs, rhs, my_strlen(lhs));
 }
+void eprint(char* text){
+	ssize_t err1 = write(STDERR_FILENO, text,(size_t) my_strlen(text));
+	if (err1 < 0){
+		_exit(-1);
+	}
+}
 
 
 // TODO preguntar profe sobre esto y si debe poner el print usage.
@@ -69,8 +76,8 @@ int my_atoi(const char *input) {
 	for (int i = 0; i < my_strlen(input); i++) {
 		char c = input[i];
 		if (c > '9' || c < '0'){
-			fprintf(stderr, "Tried to convet non digit character to integer.\n");
-			_exit(INCORRECT_PARAM_ERROR);
+			eprint("Tried to convet non digit character to integer.\n");
+			_exit(0);
 		}
 		out += c - '0';
 		out *= 10;
@@ -98,12 +105,27 @@ void my_itoa(int input, char* buf) {
 	buf[digs] = '\0';
 }
 
+void print(char* text){
+	ssize_t err1 = write(STDOUT_FILENO, text,(size_t) my_strlen(text));
+	if (err1 < 0){
+		_exit(-1);
+	}
+}
+
+
 
 // TODO: Pregunar profe si esto es error
 // Function to print how to use the binary
 void print_usage(const char *bin_name) {
-	printf("Usage (1): %s <num1> <operation (+, -, x, /)> <num2> \n", bin_name);
-	printf("Usage (2): %s -b <num operation> \n", bin_name);
+	char usage1[128] = "Usage (1): ";
+	my_strappend(usage1, bin_name);
+	my_strappend(usage1, " <num1> <operation (+, -, x, /)> <num2> \n");
+	print(usage1);
+	char usage2[128] = "Usage (2): ";
+	my_strappend(usage2, bin_name);
+	my_strappend(usage2, " -b <num operation>\n");
+	print(usage2);
+	
 }
 
 
@@ -150,14 +172,14 @@ void append_file(const char* a_s, char op, const char* b_s, int res) {
 
 
 // Routine to handle the main mode of the calculator
-void operation_mode(const char *argv[]) {
+void operation_mode(char *argv[]) {
 	int a = my_atoi(argv[1]);
 	int b = my_atoi(argv[3]);
 	
 	if (my_strlen(argv[2]) != 1) {
-		fprintf(stderr, "Parameter error!, use +, -, x or /\n");
+		//fprintf(stderr, "Parameter error!, use +, -, x or /\n");
 		print_usage(argv[0]);
-		_exit(PARAM_ERROR_CODE);
+		_exit(0);
 	}
 	
 	char op = *argv[2];
@@ -175,18 +197,18 @@ void operation_mode(const char *argv[]) {
 			break;
 		case '/':
 			if (b == 0) {
-				fprintf(stderr, "Error: Division by zero\n");
+				//fprintf(stderr, "Error: Division by zero\n");
 				_exit(DIV_ZERO_ERROR_CODE);
 			}
 			res = a / b;
 			break;
 		default:
 		// TODO: preguntar profe sobre esto
-			fprintf(stderr, "Parameter error!, use +, -, x or /\n");
+			//fprintf(stderr, "Parameter error!, use +, -, x or /\n");
 			_exit(PARAM_ERROR_CODE);
 	}
 
-	printf("Operation: %d %c %d = %d\n", a, op, b, res);
+	//printf("Operation: %d %c %d = %d\n", a, op, b, res);
 	append_file(argv[1], op, argv[3], res);
 
 }
@@ -243,10 +265,10 @@ void history_mode(char *argv[]) {
 	char buffer[BUFSIZE] = "";
 	search_history(n, buffer);
 	if (my_strcmp(buffer, "")){
-		fprintf(stderr, "History entry not found\n");
+		//fprintf(stderr, "History entry not found\n");
 		_exit(HISTORY_NOT_FOUND_ERROR);
 	}else{
-		printf("Line %d: %s\n", n, buffer);
+		//printf("Line %d: %s\n", n, buffer);
 	}
 }
 
@@ -271,7 +293,7 @@ int main(int argc, char *argv[]) {
 			operation_mode(argv);
 			break;
 		default:
-			fprintf(stderr, "Fatal error!");
+			//fprintf(stderr, "Fatal error!");
 			return FATAL_ERROR_CODE;
 			break;
 	}

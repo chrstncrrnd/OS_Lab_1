@@ -98,7 +98,7 @@ int print_directory_rec(const char directory[DIR_STR_SIZE]) {
         }
     }
     closedir(dir);
-    printf("%dK\t%s \n", size/1000, directory);
+    printf("%d\t%s \n", size/1000, directory);
 
     return size;
 }
@@ -115,15 +115,18 @@ void print_usage(const char * bin_name){
 
 
 int main(int argc, char *argv[]) {
+    char dirname[DIR_STR_SIZE] = "";
   	switch (argc){
         case 1:
-            print_directory_rec(".");
+            my_strcpy(dirname, ".", 0);
+            print_directory_rec(dirname);
 			break;
 		case 2:
 			if (my_strcmp(argv[1], "-b")) {
 				print_bin_content();
 			} else {
-            	print_directory_rec(argv[1]);
+                my_strcpy(dirname, argv[1], 0);
+            	print_directory_rec(dirname);
 			}
             break;
         default:
