@@ -11,6 +11,9 @@
 #define FILE_READ_ERROR_CODE    -1
 #define HISTORY_NOT_FOUND_ERROR -1
 
+#define INT_MAX ((int)(~0U >> 1))
+#define INT_MIN (-INT_MAX - 1)
+
 #define false 	0
 #define true 	1
 #define bool 	int
@@ -18,6 +21,7 @@
 #define BUFSIZE 64
 
 const char *log_file = "mycalc.log";
+
 
 
 // Returns the length of the string `input`, not the size that it occupies in memory
@@ -60,7 +64,7 @@ void my_strappend(char *lhs, const char *rhs) {
 
 
 // Prints `text` in `stderr`
-void eprint(char* text){
+void eprint(const char* text){
 	ssize_t err1 = write(STDERR_FILENO, text,(size_t) my_strlen(text));
 	if (err1 < 0){
 		_exit(-1);
@@ -68,32 +72,6 @@ void eprint(char* text){
 }
 
 
-// TODO preguntar profe sobre esto y si debe poner el print usage.
-// Ascii to integer, get integer value of ascii.
-// Raises error if one of the characters is not a digit
-int my_atoi(const char *input) {
-	int out = 0;
-	bool negative = false;
-	if (input[0] == '-') {
-		negative = true;
-	}
-
-	for (int i = negative; i < my_strlen(input); i++) {
-		char c = input[i];
-		if (c > '9' || c < '0'){
-			eprint("Tried to convert non digit character to integer.\n");
-			_exit(0);
-		}
-		out += c - '0';
-		out *= 10;
-	}
-
-	if (negative) {
-		return 0 - (out / 10);
-	} else {
-		return out / 10;
-	}
-}
 
 
 // Returns the number of digits in the input
@@ -106,6 +84,7 @@ int digits(int input) {
 }
 
 
+// DOES NOT WORK IF INPUT IS -2147483648 
 // Integer to ascii, writes the ascii value of `input` to `buf`.
 void my_itoa(int input, char* buf) {
 	bool negative = false;
@@ -129,27 +108,120 @@ void my_itoa(int input, char* buf) {
 
 
 // Prints `text` in `stdout`
-void print(char* text){
+void print(const char* text){
 	ssize_t err1 = write(STDOUT_FILENO, text,(size_t) my_strlen(text));
 	if (err1 < 0){
 		_exit(-1);
 	}
 }
 
+// Adds `a` and `b` and panics if overflow
+int add_with_overflow(int a, int b) {
+    if (b > 0 && a > INT_MAX - b) {
+        eprint("Added with overflow!\n");
+		_exit(-1);
+    }
+    if (b < 0 && a < INT_MIN - b) {
+        eprint("Added with underflow!\n");
+		_exit(-1);
+    }
+    return a + b;
+}
+
+// subtracts `b` from `a` and panics if overflow or underflow
+int sub_with_overflow(int a, int b) {
+    if (b > 0 && a < INT_MIN + b) {
+        eprint("Subtracted with underflow!\n");
+		_exit(-1);
+    }
+    if (b < 0 && a > INT_MAX + b) {
+        eprint("Subtracted with overflow!\n");
+		_exit(-1);
+    }
+    return a - b;
+}
+
+// Multiplies `a` and `b` and panics if overflow
+int mul_with_overflow(int a, int b) {
+    if (a > 0 && b > 0 && a > INT_MAX / b) {
+		eprint("Multiplied with overflow!\n");
+		_exit(-1);
+	};
+    if (a > 0 && b <= 0 && b < INT_MIN / a) {
+		eprint("multiplied with underflow!\n");
+		_exit(-1);
+	}
+
+    if (a < 0 && b > 0 && a < INT_MIN / b) {
+		eprint("multiplied with underflow!\n");
+		_exit(-1);
+	}
+    if (a < 0 && b <= 0 && a != 0 && b < INT_MAX / a) {
+		eprint("Multiplied with overflow!\n");
+		_exit(-1);
+	}
+    
+    return a * b;
+}
+
+// divides `a` by `b` and panics if an overflow has occurred
+int div_with_overflow(int a, int b) {
+    if (b == 0) {
+        eprint("Division by zero!\n");
+		_exit(-1);
+    }
+    if (a == INT_MIN && b == -1) {
+        eprint("Divided with overflow!\n");
+		_exit(-1);
+    }
+    return a / b;
+}
+
+
+// Ascii to integer, get integer value of ascii.
+// Raises error if one of the characters is not a digit
+int my_atoi(const char *input) {
+	int out = 0;
+	int digits = my_strlen(input);
+	bool negative = false;
+	if (input[0] == '-') {
+		negative = true;
+	}
+
+
+	for (int i = negative; i < digits; i++) {
+		char c = input[i];
+		if (c > '9' || c < '0'){
+			eprint("Tried to convert non digit character to integer.\n");
+			_exit(0);
+		}
+		out += c - '0';
+		// we need to make sure that we aren't going to overflow
+		if (i < (digits - 1)){
+			out = mul_with_overflow(out, 10);
+		}
+	}
+
+	if (negative) {
+		return 0 - out;
+	} else {
+		return out;
+	}
+}
+
+
+
 
 
 // TODO: Pregunar profe si esto es error
 // Function to print how to use the binary
 void print_usage(const char *bin_name) {
-	char usage1[128] = "Usage (1): ";
-	my_strappend(usage1, bin_name);
-	my_strappend(usage1, " <num1> <operation (+, -, x, /)> <num2> \n");
-	print(usage1);
-	char usage2[128] = "Usage (2): ";
-	my_strappend(usage2, bin_name);
-	my_strappend(usage2, " -b <num operation>\n");
-	print(usage2);
-	
+	print("Usage (1): ");
+	print(bin_name);
+	print(" <num1> <operation (+, -, x, /)> <num2> \n");
+	print("Usage (2): ");
+	print(bin_name);
+	print(" -b <num operation>\n");
 }
 
 
@@ -158,13 +230,13 @@ void print_usage(const char *bin_name) {
 void append_file(const char* a_s, char op, const char* b_s, int res) {
 	int fd = open(log_file, O_CREAT | O_WRONLY | O_APPEND, 0644);
 	if (fd < 0) {
-		eprint("Error, could not open file!");
+		eprint("Error, could not open file!\n");
 		_exit(FILE_WRITE_ERROR_CODE);
 	}
 
 	char buf[BUFSIZE] = "Operation: ";
 
-	char r_s[16];
+	char r_s[16] = {0};
 	my_itoa(res, r_s);
 	
 	char o_s[2];
@@ -182,14 +254,14 @@ void append_file(const char* a_s, char op, const char* b_s, int res) {
 	
 	ssize_t err1 = write(fd, buf,(size_t) my_strlen(buf));
 	if (err1 < 0) {
-		eprint("Error writing to file: ");
+		eprint("Error writing to log file!\n");
 		_exit(FILE_WRITE_ERROR_CODE);
 	}
 	
 	int err2 = close(fd);
 
 	if (err2 < 0) {
-		eprint("Error closing file");
+		eprint("Error closing log file!\n");
 		_exit(FILE_CLOSE_ERROR_CODE);
 	}
 }
@@ -211,19 +283,20 @@ void operation_mode(char *argv[]) {
 
 	switch (op) {
 		case '+':
-			res = a + b;
+			res = add_with_overflow(a, b);
 			break;
 		case '-':
-			res = a - b;
+			res = sub_with_overflow(a, b);
 			break;
 		case 'x':
-			res = a * b;
+			res = mul_with_overflow(a, b);
 			break;
 		case '/':
 			if (b == 0) {
 				eprint("Error: Division by zero\n");
 				_exit(DIV_ZERO_ERROR_CODE);
 			}
+			// we cannot overflow with this operation
 			res = a / b;
 			break;
 		default:
@@ -258,7 +331,6 @@ void operation_mode(char *argv[]) {
 	
 	print(buf);
 	append_file(a_s, op, b_s, res);
-
 }
 
 
@@ -272,7 +344,7 @@ void get_line(int fd, char * buffer){
 		my_strappend(buffer, buf);
 	}
 	if (n_read < 0){
-		eprint("Error reading file");
+		eprint("Error reading file\n");
 		_exit(FILE_READ_ERROR_CODE);
 	}
 }
@@ -292,7 +364,7 @@ void search_history(int n, char * buffer) {
 			if (lines_read == 0){
 				long err = lseek(fd, -1, SEEK_CUR);
 				if (err < 0){
-					eprint("Couldn't seek back!");
+					eprint("Couldn't seek back on log file!\n");
 					_exit(FILE_READ_ERROR_CODE);	
 				}
 			}
@@ -301,7 +373,7 @@ void search_history(int n, char * buffer) {
 		}
 	}
 	if (n_read < 0){
-		eprint("Error reading file");
+		eprint("Error reading file\n");
 		_exit(FILE_READ_ERROR_CODE);
 	}
 }
@@ -349,7 +421,7 @@ int main(int argc, char *argv[]) {
 			operation_mode(argv);
 			break;
 		default:
-			eprint("Fatal error!");
+			eprint("Fatal error!\n");
 			return FATAL_ERROR_CODE;
 			break;
 	}
