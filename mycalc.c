@@ -1,7 +1,6 @@
 #include <fcntl.h> /* To use open, read, write, close */
 #include <unistd.h>
 
-// ups
 #define FATAL_ERROR_CODE 		-1
 #define DIV_ZERO_ERROR_CODE 	-1
 #define PARAM_ERROR_CODE 		-1
@@ -19,7 +18,6 @@
 #define BUFSIZE 64
 
 const char *log_file = "mycalc.log";
-
 
 
 // Returns the length of the string `input`, not the size that it occupies in memory
@@ -59,6 +57,9 @@ void my_strcpy(char *to, const char *from, int offset) {
 void my_strappend(char *lhs, const char *rhs) {
 	my_strcpy(lhs, rhs, my_strlen(lhs));
 }
+
+
+// Prints `text` in `stderr`
 void eprint(char* text){
 	ssize_t err1 = write(STDERR_FILENO, text,(size_t) my_strlen(text));
 	if (err1 < 0){
@@ -72,16 +73,26 @@ void eprint(char* text){
 // Raises error if one of the characters is not a digit
 int my_atoi(const char *input) {
 	int out = 0;
-	for (int i = 0; i < my_strlen(input); i++) {
+	bool negative = false;
+	if (input[0] == '-') {
+		negative = true;
+	}
+
+	for (int i = negative; i < my_strlen(input); i++) {
 		char c = input[i];
 		if (c > '9' || c < '0'){
-			eprint("Tried to convet non digit character to integer.\n");
+			eprint("Tried to convert non digit character to integer.\n");
 			_exit(0);
 		}
 		out += c - '0';
 		out *= 10;
 	}
-	return out / 10;
+
+	if (negative) {
+		return 0 - (out / 10);
+	} else {
+		return out / 10;
+	}
 }
 
 
@@ -89,7 +100,7 @@ int my_atoi(const char *input) {
 int digits(int input) {
 	int i = 0;
 	for (; input > 0; input /= 10) {
-		i++;
+		i++; // TODO preguntar profe sobre esto y si debe poner el print usage.
 	}
 	return i;
 }
@@ -97,13 +108,27 @@ int digits(int input) {
 
 // Integer to ascii, writes the ascii value of `input` to `buf`.
 void my_itoa(int input, char* buf) {
+	bool negative = false;
+	if (input < 0) {
+		negative = true;
+		input = 0 - input;
+	}
+
 	int digs = digits(input);
 	for (int i = digs; input > 0; input /= 10) {
 		buf[--i] = (char) (input % 10) + '0';
 	}
 	buf[digs] = '\0';
+
+	if (negative) {
+		char negative_buf[BUFSIZE] = "-";
+		my_strappend(negative_buf, buf);
+		my_strcpy(buf, negative_buf, 0);
+	}
 }
 
+
+// Prints `text` in `stdout`
 void print(char* text){
 	ssize_t err1 = write(STDOUT_FILENO, text,(size_t) my_strlen(text));
 	if (err1 < 0){
@@ -133,7 +158,7 @@ void print_usage(const char *bin_name) {
 void append_file(const char* a_s, char op, const char* b_s, int res) {
 	int fd = open(log_file, O_CREAT | O_WRONLY | O_APPEND, 0644);
 	if (fd < 0) {
-		perror("Error, could not open file!");
+		eprint("Error, could not open file!");
 		_exit(FILE_WRITE_ERROR_CODE);
 	}
 
@@ -157,14 +182,14 @@ void append_file(const char* a_s, char op, const char* b_s, int res) {
 	
 	ssize_t err1 = write(fd, buf,(size_t) my_strlen(buf));
 	if (err1 < 0) {
-		perror("Error writing to file: ");
+		eprint("Error writing to file: ");
 		_exit(FILE_WRITE_ERROR_CODE);
 	}
 	
 	int err2 = close(fd);
 
 	if (err2 < 0) {
-		perror("Error closing file");
+		eprint("Error closing file");
 		_exit(FILE_CLOSE_ERROR_CODE);
 	}
 }
@@ -176,7 +201,7 @@ void operation_mode(char *argv[]) {
 	int b = my_atoi(argv[3]);
 	
 	if (my_strlen(argv[2]) != 1) {
-		//fprintf(stderr, "Parameter error!, use +, -, x or /\n");
+		eprint("Parameter error!, use +, -, x or /\n");
 		print_usage(argv[0]);
 		_exit(0);
 	}
@@ -196,19 +221,43 @@ void operation_mode(char *argv[]) {
 			break;
 		case '/':
 			if (b == 0) {
-				//fprintf(stderr, "Error: Division by zero\n");
+				eprint("Error: Division by zero\n");
 				_exit(DIV_ZERO_ERROR_CODE);
 			}
 			res = a / b;
 			break;
 		default:
 		// TODO: preguntar profe sobre esto
-			//fprintf(stderr, "Parameter error!, use +, -, x or /\n");
+			eprint("Parameter error!, use +, -, x or /\n");
 			_exit(PARAM_ERROR_CODE);
 	}
 
-	//printf("Operation: %d %c %d = %d\n", a, op, b, res);
-	append_file(argv[1], op, argv[3], res);
+	char buf[BUFSIZE] = "Operation: ";
+
+	char a_s[16];
+	my_itoa(a, a_s);
+
+	char b_s[16];
+	my_itoa(b, b_s);
+
+	char r_s[16];
+	my_itoa(res, r_s);
+	
+	char o_s[2];
+	o_s[0] = op;
+	o_s[1] = '\0';
+	
+	my_strappend(buf, a_s);
+	my_strappend(buf, " ");
+	my_strappend(buf, o_s);
+	my_strappend(buf, " ");
+	my_strappend(buf, b_s);
+	my_strappend(buf, " = ");
+	my_strappend(buf, r_s);
+	my_strappend(buf, "\n");
+	
+	print(buf);
+	append_file(a_s, op, b_s, res);
 
 }
 
@@ -223,7 +272,7 @@ void get_line(int fd, char * buffer){
 		my_strappend(buffer, buf);
 	}
 	if (n_read < 0){
-		perror("Error reading file");
+		eprint("Error reading file");
 		_exit(FILE_READ_ERROR_CODE);
 	}
 }
@@ -243,7 +292,7 @@ void search_history(int n, char * buffer) {
 			if (lines_read == 0){
 				long err = lseek(fd, -1, SEEK_CUR);
 				if (err < 0){
-					perror("Couldn't seek back!");
+					eprint("Couldn't seek back!");
 					_exit(FILE_READ_ERROR_CODE);	
 				}
 			}
@@ -252,7 +301,7 @@ void search_history(int n, char * buffer) {
 		}
 	}
 	if (n_read < 0){
-		perror("Error reading file");
+		eprint("Error reading file");
 		_exit(FILE_READ_ERROR_CODE);
 	}
 }
@@ -264,10 +313,18 @@ void history_mode(char *argv[]) {
 	char buffer[BUFSIZE] = "";
 	search_history(n, buffer);
 	if (my_strcmp(buffer, "")){
-		//fprintf(stderr, "History entry not found\n");
+		eprint("History entry not found\n");
 		_exit(HISTORY_NOT_FOUND_ERROR);
-	}else{
-		//printf("Line %d: %s\n", n, buffer);
+	} else {
+		char output[BUFSIZE] = "Line ";
+		char n_str[16];
+
+		my_itoa(n, n_str);
+		my_strappend(output, n_str);
+		my_strappend(output, ": ");
+		my_strappend(output, buffer);
+		my_strappend(output, "\n");
+		print(output);
 	}
 }
 
@@ -292,7 +349,7 @@ int main(int argc, char *argv[]) {
 			operation_mode(argv);
 			break;
 		default:
-			//fprintf(stderr, "Fatal error!");
+			eprint("Fatal error!");
 			return FATAL_ERROR_CODE;
 			break;
 	}
