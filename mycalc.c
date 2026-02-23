@@ -388,15 +388,14 @@ void history_mode(char *argv[]) {
 		eprint("History entry not found\n");
 		_exit(HISTORY_NOT_FOUND_ERROR);
 	} else {
-		char output[BUFSIZE] = "Line ";
+		print("Line ");
 		char n_str[16];
 
 		my_itoa(n, n_str);
-		my_strappend(output, n_str);
-		my_strappend(output, ": ");
-		my_strappend(output, buffer);
-		my_strappend(output, "\n");
-		print(output);
+		print(n_str);
+		print(": ");
+		print(buffer);
+		print("\n");
 	}
 }
 
