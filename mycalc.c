@@ -1,5 +1,7 @@
 #include <fcntl.h> /* To use open, read, write, close */
 #include <unistd.h>
+#include <string.h>
+#include <stdlib.h>
 
 #define FATAL_ERROR_CODE 		-1
 #define DIV_ZERO_ERROR_CODE 	-1
@@ -23,49 +25,9 @@
 const char *log_file = "mycalc.log";
 
 
-
-// Returns the length of the string `input`, not the size that it occupies in memory
-int my_strlen(const char *input) {
-	int out = 0;
-	for (int i = 0; input[i] != '\0' ; i++) {
-		out += 1;
-	}
-	return out;
-}
-
-
-// Compares two strings `a` and `b` returns true if all characters are equal
-bool my_strcmp(const char* a, const char* b) {
-	int len_a = my_strlen(a);
-	if (len_a != my_strlen(b)) {
-		return false;
-	}
-	for (int i = 0; i < len_a; i ++) {
-		if (a[i] != b[i]) {
-			return false;
-		}
-	}
-	return true;
-}
-
-
-// Copies the contents of the second argument, `from`, to the memory positions of `to` starting from `offset`
-void my_strcpy(char *to, const char *from, int offset) {
-	for (int i = offset; i < my_strlen(from) + offset; i++) {
-		to[i] = from[i - offset];
-	}	
-}
-
-
-// Appends the string `rhs` to the string `lhs`. Result is stored in `lhs`.
-void my_strappend(char *lhs, const char *rhs) {
-	my_strcpy(lhs, rhs, my_strlen(lhs));
-}
-
-
 // Prints `text` in `stderr`
 void eprint(const char* text){
-	ssize_t err1 = write(STDERR_FILENO, text,(size_t) my_strlen(text));
+	ssize_t err1 = write(STDERR_FILENO, text,(size_t) strlen(text));
 	if (err1 < 0){
 		_exit(-1);
 	}
@@ -86,7 +48,7 @@ int digits(int input) {
 
 // DOES NOT WORK IF INPUT IS -2147483648 
 // Integer to ascii, writes the ascii value of `input` to `buf`.
-void my_itoa(int input, char* buf) {
+void itoa(int input, char* buf) {
 	bool negative = false;
 	if (input < 0) {
 		negative = true;
@@ -101,15 +63,15 @@ void my_itoa(int input, char* buf) {
 
 	if (negative) {
 		char negative_buf[BUFSIZE] = "-";
-		my_strappend(negative_buf, buf);
-		my_strcpy(buf, negative_buf, 0);
+		strcat(negative_buf, buf);
+		strcpy(buf, negative_buf);
 	}
 }
 
 
 // Prints `text` in `stdout`
 void print(const char* text){
-	ssize_t err1 = write(STDOUT_FILENO, text,(size_t) my_strlen(text));
+	ssize_t err1 = write(STDOUT_FILENO, text,(size_t) strlen(text));
 	if (err1 < 0){
 		_exit(-1);
 	}
@@ -178,41 +140,6 @@ int div_with_overflow(int a, int b) {
 }
 
 
-// Ascii to integer, get integer value of ascii.
-// Raises error if one of the characters is not a digit
-int my_atoi(const char *input) {
-	int out = 0;
-	int digits = my_strlen(input);
-	bool negative = false;
-	if (input[0] == '-') {
-		negative = true;
-	}
-
-
-	for (int i = negative; i < digits; i++) {
-		char c = input[i];
-		if (c > '9' || c < '0'){
-			eprint("Tried to convert non digit character to integer.\n");
-			_exit(0);
-		}
-		out += c - '0';
-		// we need to make sure that we aren't going to overflow
-		if (i < (digits - 1)){
-			out = mul_with_overflow(out, 10);
-		}
-	}
-
-	if (negative) {
-		return 0 - out;
-	} else {
-		return out;
-	}
-}
-
-
-
-
-
 // TODO: Pregunar profe si esto es error
 // Function to print how to use the binary
 void print_usage(const char *bin_name) {
@@ -237,22 +164,22 @@ void append_file(const char* a_s, char op, const char* b_s, int res) {
 	char buf[BUFSIZE] = "Operation: ";
 
 	char r_s[16] = {0};
-	my_itoa(res, r_s);
+	itoa(res, r_s);
 	
 	char o_s[2];
 	o_s[0] = op;
 	o_s[1] = '\0';
 	
-	my_strappend(buf, a_s);
-	my_strappend(buf, " ");
-	my_strappend(buf, o_s);
-	my_strappend(buf, " ");
-	my_strappend(buf, b_s);
-	my_strappend(buf, " = ");
-	my_strappend(buf, r_s);
-	my_strappend(buf, "\n");
+	strcat(buf, a_s);
+	strcat(buf, " ");
+	strcat(buf, o_s);
+	strcat(buf, " ");
+	strcat(buf, b_s);
+	strcat(buf, " = ");
+	strcat(buf, r_s);
+	strcat(buf, "\n");
 	
-	ssize_t err1 = write(fd, buf,(size_t) my_strlen(buf));
+	ssize_t err1 = write(fd, buf,(size_t) strlen(buf));
 	if (err1 < 0) {
 		eprint("Error writing to log file!\n");
 		_exit(FILE_WRITE_ERROR_CODE);
@@ -269,10 +196,10 @@ void append_file(const char* a_s, char op, const char* b_s, int res) {
 
 // Routine to handle the main mode of the calculator
 void operation_mode(char *argv[]) {
-	int a = my_atoi(argv[1]);
-	int b = my_atoi(argv[3]);
+	int a = atoi(argv[1]);
+	int b = atoi(argv[3]);
 	
-	if (my_strlen(argv[2]) != 1) {
+	if (strlen(argv[2]) != 1) {
 		eprint("Parameter error!, use +, -, x or /\n");
 		print_usage(argv[0]);
 		_exit(0);
@@ -308,26 +235,26 @@ void operation_mode(char *argv[]) {
 	char buf[BUFSIZE] = "Operation: ";
 
 	char a_s[16];
-	my_itoa(a, a_s);
+	itoa(a, a_s);
 
 	char b_s[16];
-	my_itoa(b, b_s);
+	itoa(b, b_s);
 
 	char r_s[16];
-	my_itoa(res, r_s);
+	itoa(res, r_s);
 	
 	char o_s[2];
 	o_s[0] = op;
 	o_s[1] = '\0';
 	
-	my_strappend(buf, a_s);
-	my_strappend(buf, " ");
-	my_strappend(buf, o_s);
-	my_strappend(buf, " ");
-	my_strappend(buf, b_s);
-	my_strappend(buf, " = ");
-	my_strappend(buf, r_s);
-	my_strappend(buf, "\n");
+	strcat(buf, a_s);
+	strcat(buf, " ");
+	strcat(buf, o_s);
+	strcat(buf, " ");
+	strcat(buf, b_s);
+	strcat(buf, " = ");
+	strcat(buf, r_s);
+	strcat(buf, "\n");
 	
 	print(buf);
 	append_file(a_s, op, b_s, res);
@@ -341,7 +268,7 @@ void get_line(int fd, char * buffer){
 		if (buf[0] == '\n'){
 			break;
 		}
-		my_strappend(buffer, buf);
+		strcat(buffer, buf);
 	}
 	if (n_read < 0){
 		eprint("Error reading file\n");
@@ -353,11 +280,11 @@ void get_line(int fd, char * buffer){
 // TODO: comprobar edge cases
 void search_history(int n, char * buffer) {
 	int fd = open(log_file, O_RDONLY);
-	char buf[1];
+	char buf[2];
 	ssize_t n_read;
 	int lines_read = 0;
 	while( (n_read = read(fd, buf, 1)) > 0){
-		if (my_strcmp(buf, "\n")){
+		if (strcmp(buf, "\n")){
 			lines_read += 1;
 		}
 		if (lines_read == n-1){
@@ -381,17 +308,17 @@ void search_history(int n, char * buffer) {
 
 // Routine to handle the history mode of the calculator.
 void history_mode(char *argv[]) {
-	int n = my_atoi(argv[2]);
+	int n = atoi(argv[2]);
 	char buffer[BUFSIZE] = "";
 	search_history(n, buffer);
-	if (my_strcmp(buffer, "")){
+	if (strcmp(buffer, "")){
 		eprint("History entry not found\n");
 		_exit(HISTORY_NOT_FOUND_ERROR);
 	} else {
 		print("Line ");
 		char n_str[16];
 
-		my_itoa(n, n_str);
+		itoa(n, n_str);
 		print(n_str);
 		print(": ");
 		print(buffer);
@@ -409,7 +336,7 @@ int main(int argc, char *argv[]) {
 
   	switch (argc){
 		case 3:
-			if (my_strcmp(argv[1], "-b")) {
+			if (strcmp(argv[1], "-b")) {
 				history_mode(argv);
 				break;
 			} else {
