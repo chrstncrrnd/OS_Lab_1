@@ -7,7 +7,7 @@
 #include <string.h>
 
 
-
+//#define DEBUG
 #define DIR_STR_SIZE 128
 
 #define bool int
@@ -38,25 +38,26 @@ int print_directory_rec(const char directory[DIR_STR_SIZE]) {
         // 4 for directories
 		// 8 for files
         if (entry->d_type == 4) {
-            if (strcmp(entry->d_name, ".") || strcmp(entry->d_name, "..")) {
+            if ((strcmp(entry->d_name, ".") == 0) || (strcmp(entry->d_name, "..") == 0)) {
                 continue;
             }
             char new_dir_str[DIR_STR_SIZE] = "";
             strcpy(new_dir_str, directory);
-            strappend(new_dir_str, "/");
-            strappend(new_dir_str, entry->d_name);
+            strcat(new_dir_str, "/");
+            strcat(new_dir_str, entry->d_name);
             size += print_directory_rec(new_dir_str);
         } else if (entry->d_type == 8){
             stat_t buf;
             char fname[DIR_STR_SIZE] = "";
             strcpy(fname, directory);
-            strappend(fname, "/");
-            strappend(fname, entry->d_name);
+            strcat(fname, "/");
+            strcat(fname, entry->d_name);
             int err = stat(fname, &buf);
             if (err < 0) {
                 perror("Error reading file size");
                 _exit(-1);
             }
+            //printf("Size of file: %s is: %d\n", fname, buf.st_size);
             size += buf.st_size;
         }
     }
@@ -78,6 +79,10 @@ void print_usage(const char * bin_name){
 
 
 int main(int argc, char *argv[]) {
+    #ifdef DEBUG
+    char dirname[DIR_STR_SIZE] = "./folder1";
+    print_directory_rec(dirname);
+    #else
     char dirname[DIR_STR_SIZE] = "";
   	switch (argc){
         case 1:
@@ -85,7 +90,7 @@ int main(int argc, char *argv[]) {
             print_directory_rec(dirname);
 			break;
 		case 2:
-			if (strcmp(argv[1], "-b")) {
+			if (strcmp(argv[1], "-b") == 0) {
 				print_bin_content();
 			} else {
                 strcpy(dirname, argv[1]);
@@ -97,6 +102,6 @@ int main(int argc, char *argv[]) {
             //TODO: pregutnar al profe si aqui debe salir con error
             break;
   	}
-
+    #endif
   	return 0;
 }
