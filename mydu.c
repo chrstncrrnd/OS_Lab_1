@@ -1,21 +1,14 @@
 #include <fcntl.h> /* To use open, read, write, close */
 #include <unistd.h>
 #include <dirent.h>
-#include <stdio.h>
+#include <stdio.h> // exclusively for printf and perror
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string.h>
 
 
-//#define DEBUG
 #define DIR_STR_SIZE 128
 
-#define bool int
-#define true 1
-#define false 0
-
-#define PARAM_ERROR		-1
-#define EXEC_ERROR		-1
 
 typedef struct stat stat_t;
  
@@ -26,6 +19,8 @@ const char *binary_file = "mydu.bin";
 // File SIZE Type
 typedef unsigned long long fsize_t;
 
+
+// encode the byte string into param `ouptut'
 void encode_size(fsize_t size, unsigned char output[8]){
     output[0] = (unsigned char)(size >> 56);
     output[1] = (unsigned char)(size >> 48);
@@ -37,6 +32,8 @@ void encode_size(fsize_t size, unsigned char output[8]){
     output[7] = (unsigned char)(size);
 }
 
+
+// decode the byte string into a number
 fsize_t decode_size(const unsigned char input[8]){
     fsize_t size = 0;
     size |= (fsize_t)input[0] << 56;
@@ -50,15 +47,25 @@ fsize_t decode_size(const unsigned char input[8]){
     return size;
 }
 
+
+// function that prints the result and appends it to the binary file
+// records in the file are stored as: 8 bytes for size and `DIR_STR_SIZE` bytes for directory name
+// this may not be optimally space efficient but it lets us exctract the data very easily
 void print_and_append(fsize_t size, const char* directory, const int* fd){
+    // print the result 
     printf("%llu\t%s\n", size, directory);
+    // we need to use unsigned chars because we just care about the bytes
     unsigned char size_text[8];
+    // encode the size into a byte string
     encode_size(size, size_text);
+
+    // write the byte string
     ssize_t err1 = write(*fd, size_text, 8);
     if (err1 < 0){
         perror("Error size to log file!");
         _exit(-1);
     }
+    // write the directory.
     ssize_t err2 = write(*fd, directory, DIR_STR_SIZE);
     if (err2 < 0){
         perror("Error writing directory to log file!");
@@ -120,32 +127,43 @@ fsize_t print_directory_rec(const char directory[DIR_STR_SIZE], const int *out_f
 }
 
 
-
+// function to handle the `-b` or history functionality of the program
 void print_bin_content(){
+    // output header
     printf("--- Contents of binary file ---\n");
+    // file that we need to read
     int in_fd = open(binary_file, O_RDONLY);
     if (in_fd < 0){
         perror("Couldn't open log file for reading!");
         _exit(-1);
     }
+
+    // define buffers
     char buf[DIR_STR_SIZE];
     unsigned char size_text[8];
+
+    // define errors and size
     ssize_t err_size_read, err_dir_read;
     fsize_t size;
 
+    // while we are reading something
     while ((err_size_read = read(in_fd, size_text, 8)) > 0) {
+        // check for errors
         err_dir_read = read(in_fd, buf, DIR_STR_SIZE);
         if (err_dir_read < 0){
             perror("Error reading log file!");
             _exit(-1);
         }
+        // decode the size using out function
         size = decode_size(size_text);
+        // print using the same format as previously
         printf("%llu\t%s\n", size, buf);
     }
     if (err_size_read < 0){
         perror("Error reading log file!");
         _exit(-1);
     }
+    // finally close the file
     close(in_fd);
 }
 
@@ -158,17 +176,22 @@ void print_usage(const char * bin_name){
 }
 
 
-int try_open_out_fd(){
+
+// function to actually run the du on `directory`
+void run_du(char *dir){
+    // string that holds precisely DIR_STR_SIZE chars
+    char directory[DIR_STR_SIZE];
+    strcpy(directory, dir);
+    // open output file
     int out_fd = open(binary_file, O_CREAT | O_WRONLY | O_APPEND, 0644);
     if (out_fd < 0){
         perror("Couldn't open output file!");
         _exit(-1);
     }
-    return out_fd;
-}
+    // call underlying functionality
+    print_directory_rec(directory, &out_fd);
 
-void try_close_out_fd(int fd){
-    int err = close(fd);
+    int err = close(out_fd);
     if (err < 0){
         perror("Error closing output file!");
         _exit(-1);
@@ -177,23 +200,16 @@ void try_close_out_fd(int fd){
 
 int main(int argc, char *argv[]) {
     // string to hold the directory name
-    char dirname[DIR_STR_SIZE] = "";
   	switch (argc){
         case 1:
-            int out_fd = try_open_out_fd();
-            strcpy(dirname, ".");
-            print_directory_rec(dirname, &out_fd);
-            try_close_out_fd(out_fd);
+            run_du(".");
 			break;
 		case 2:
             // strcmp has odd behaviour... (returns 0 if strings are equal)
 			if (strcmp(argv[1], "-b") == 0) {
 				print_bin_content();
 			} else {
-                int out_fd = try_open_out_fd();
-                strcpy(dirname, argv[1]);
-            	print_directory_rec(dirname, &out_fd);
-                try_close_out_fd(out_fd);
+                run_du(argv[1]);
 			}
             break;
         default:
