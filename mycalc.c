@@ -50,18 +50,18 @@ int digits(int input) {
 void itoa(int input, char* buf) {
 	// making int min positive, we get an overflow so we need to handle this case seperately
 	if (input == INT_MIN){
-		switch(INT_MIN){
+		switch(sizeof(int)){
 			// - 2** 15 (16 bit integer)
-			case (-32768):
-				buf = "-32768";
+			case (2):
+				strcpy(buf, "-32768");
 				return;
 			// - 2**31 (32 bit integer)
-			case (-2147483648):
-				buf = "-2147483648";
+			case (4):
+				strcpy(buf, "-2147483648");
 				return;
 			// - 2**63 (64 bit integer)
-			case (-9223372036854775808):
-				buf = "-9223372036854775808";
+			case (8):
+				strcpy(buf, "-9223372036854775808");
 				return;
 			default:
 				eprint("No support for minimum integer on this platform");
@@ -173,7 +173,7 @@ void print_usage(const char *bin_name) {
 
 // Appends a result entry to the log file. 
 // Raises errors for when the file is not found, cannot close file or cannot write to file.
-void append_file(const char* a_s, char op, const char* b_s, int res) {
+void append_file(const char* a_s, char op, const char* b_s, const char* r_s) {
 	int fd = open(log_file, O_CREAT | O_WRONLY | O_APPEND, 0644);
 	if (fd < 0) {
 		eprint("Error, could not open file!\n");
@@ -182,8 +182,6 @@ void append_file(const char* a_s, char op, const char* b_s, int res) {
 
 	char buf[BUFSIZE] = "Operation: ";
 
-	char r_s[16] = {0};
-	itoa(res, r_s);
 	
 	char o_s[2];
 	o_s[0] = op;
@@ -253,13 +251,13 @@ void operation_mode(char *argv[]) {
 
 	char buf[BUFSIZE] = "Operation: ";
 
-	char a_s[16];
+	char a_s[16] = "";
 	itoa(a, a_s);
 
-	char b_s[16];
+	char b_s[16] = "";
 	itoa(b, b_s);
 
-	char r_s[16];
+	char r_s[16] = "";
 	itoa(res, r_s);
 	
 	char o_s[2];
@@ -276,7 +274,7 @@ void operation_mode(char *argv[]) {
 	strcat(buf, "\n");
 	
 	print(buf);
-	append_file(a_s, op, b_s, res);
+	append_file(a_s, op, b_s, r_s);
 }
 
 
