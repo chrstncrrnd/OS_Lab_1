@@ -306,7 +306,7 @@ void search_history(int n, char * buffer) {
 	ssize_t n_read;
 	int lines_read = 0;
 	while( (n_read = read(fd, buf, 1)) > 0){
-		if (strcmp(buf, "\n")){
+		if (strcmp(buf, "\n") == 0){
 			lines_read += 1;
 		}
 		if (lines_read == n-1){
@@ -333,7 +333,7 @@ void history_mode(char *argv[]) {
 	int n = atoi(argv[2]);
 	char buffer[BUFSIZE] = "";
 	search_history(n, buffer);
-	if (strcmp(buffer, "")){
+	if (strcmp(buffer, "") == 0){
 		eprint("History entry not found\n");
 		_exit(HISTORY_NOT_FOUND_ERROR);
 	} else {
@@ -358,7 +358,7 @@ int main(int argc, char *argv[]) {
 
   	switch (argc){
 		case 3:
-			if (strcmp(argv[1], "-b")) {
+			if (strcmp(argv[1], "-b") == 0) {
 				history_mode(argv);
 				break;
 			} else {
