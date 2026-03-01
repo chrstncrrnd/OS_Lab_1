@@ -81,10 +81,6 @@ void print_usage(const char * bin_name){
 
 
 int main(int argc, char *argv[]) {
-    #ifdef DEBUG
-    char dirname[DIR_STR_SIZE] = "./folder1";
-    print_directory_rec(dirname);
-    #else
     char dirname[DIR_STR_SIZE] = "";
   	switch (argc){
         case 1:
@@ -104,6 +100,5 @@ int main(int argc, char *argv[]) {
             //TODO: pregutnar al profe si aqui debe salir con error
             break;
   	}
-    #endif
   	return 0;
 }
