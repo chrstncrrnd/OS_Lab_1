@@ -68,6 +68,11 @@ void itoa(int input, char* buf) {
 				_exit(-1);
 		}
 	}
+	// handle edge case of 0
+	if (input == 0){
+		strcpy(buf, "0");
+		return;
+	}
 	bool negative = false;
 	if (input < 0) {
 		negative = true;
