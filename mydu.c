@@ -25,14 +25,15 @@ const char *binary_file = "mydu.bin";
 
 // Recursive function that prints out the current directory and 
 // calls itself for all subdirectories
-int print_directory_rec(const char directory[DIR_STR_SIZE]) {
+long long print_directory_rec(const char directory[DIR_STR_SIZE]) {
     DIR *dir = opendir(directory);
     struct dirent *entry;
 	if (dir == NULL) {
 		perror("Error opening directory");
 		_exit(-1);
 	}
-    int size = 0;
+
+    long long size = 0;
 
     while((entry = readdir(dir)) != NULL) {
         // 4 for directories
@@ -58,11 +59,12 @@ int print_directory_rec(const char directory[DIR_STR_SIZE]) {
                 _exit(-1);
             }
             //printf("Size of file: %s is: %d\n", fname, buf.st_size);
-            size += buf.st_size;
+            size += (long long)buf.st_size;
         }
     }
     closedir(dir);
-    printf("%d\t%s \n", size/1000, directory);
+    long long kb = (size + 1023) / 1024;
+    printf("%lld\t%s\n", kb, directory);
 
     return size;
 }
@@ -74,7 +76,7 @@ void print_bin_content(){}
 
 void print_usage(const char * bin_name){
     printf("Usage 1: %s [<directory>]\n", bin_name);
-    printf("Usage 2: %s [-b]\n");
+    printf("Usage 2: %s [-b]\n", bin_name);
 }
 
 
