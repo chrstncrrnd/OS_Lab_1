@@ -46,9 +46,28 @@ int digits(int input) {
 }
 
 
-// DOES NOT WORK IF INPUT IS -2147483648 
 // Integer to ascii, writes the ascii value of `input` to `buf`.
 void itoa(int input, char* buf) {
+	// making int min positive, we get an overflow so we need to handle this case seperately
+	if (input == INT_MIN){
+		switch(INT_MIN){
+			// - 2** 15 (16 bit integer)
+			case (-32768):
+				buf = "-32768";
+				return;
+			// - 2**31 (32 bit integer)
+			case (-2147483648):
+				buf = "-2147483648";
+				return;
+			// - 2**63 (64 bit integer)
+			case (-9223372036854775808):
+				buf = "-9223372036854775808";
+				return;
+			default:
+				eprint("No support for minimum integer on this platform");
+				_exit(-1);
+		}
+	}
 	bool negative = false;
 	if (input < 0) {
 		negative = true;
