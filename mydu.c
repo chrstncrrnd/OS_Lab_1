@@ -62,7 +62,7 @@ void print_and_append(fsize_t size, const char* directory, const int* fd){
     // write the byte string
     ssize_t err1 = write(*fd, size_text, 8);
     if (err1 < 0){
-        perror("Error size to log file!");
+        perror("Error writing size to log file!");
         _exit(-1);
     }
     // write the directory.
