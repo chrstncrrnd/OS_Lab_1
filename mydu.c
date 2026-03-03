@@ -6,13 +6,10 @@
 #include <sys/stat.h>
 #include <string.h>
 
-
 #define DIR_STR_SIZE 128
-
 
 typedef struct stat stat_t;
  
-
 // Name of the binary file to write/read
 const char *binary_file = "mydu.bin";
 
@@ -20,7 +17,7 @@ const char *binary_file = "mydu.bin";
 typedef unsigned long long fsize_t;
 
 
-// encode the byte string into param `ouptut'
+// Encode the byte string into param `ouptut'
 void encode_size(fsize_t size, unsigned char output[8]){
     output[0] = (unsigned char)(size >> 56);
     output[1] = (unsigned char)(size >> 48);
@@ -33,7 +30,7 @@ void encode_size(fsize_t size, unsigned char output[8]){
 }
 
 
-// decode the byte string into a number
+// Decode the byte string into a number
 fsize_t decode_size(const unsigned char input[8]){
     fsize_t size = 0;
     size |= (fsize_t)input[0] << 56;
@@ -48,9 +45,9 @@ fsize_t decode_size(const unsigned char input[8]){
 }
 
 
-// function that prints the result and appends it to the binary file
-// records in the file are stored as: 8 bytes for size and `DIR_STR_SIZE` bytes for directory name
-// this may not be optimally space efficient but it lets us exctract the data very easily
+// Function that prints the result and appends it to the binary file.
+// Records in the file are stored as: 8 bytes for size and `DIR_STR_SIZE` bytes for directory name,
+// which may not be optimally space efficient but it lets us exctract the data very easily
 void print_and_append(fsize_t size, const char* directory, const int* fd){
     // print the result 
     printf("%llu\t%s\n", size, directory);
@@ -78,17 +75,27 @@ void print_and_append(fsize_t size, const char* directory, const int* fd){
 fsize_t print_directory_rec(const char directory[DIR_STR_SIZE], const int *out_fd) {
     DIR *dir = opendir(directory);
     struct dirent *entry;
+    stat_t dir_stat;
     // we cannot open the directory
-	if (dir == NULL) {
-		perror("Error opening directory");
-		_exit(-1);
-	}
+    if (dir == NULL) {
+        char err_s[DIR_STR_SIZE + 32] = "";
+        strcat(err_s, "Error opening ");
+        strcat(err_s, directory);
+        perror(err_s);
+        _exit(-1);
+    }
 
-    fsize_t size = 0;
+    // Get the size of the directory itself (inode block)
+    if (stat(directory, &dir_stat) < 0) {
+        perror("Error reading directory size");
+        _exit(-1);
+    }
+
+    fsize_t size = (fsize_t)dir_stat.st_blocks * 512;
 
     while((entry = readdir(dir)) != NULL) {
         // 4 for directories
-		// 8 for files
+        // 8 for files
         if (entry->d_type == 4) {
             // do not read the current or parent directory (since this would result in an infinite loop)
             if ((strcmp(entry->d_name, ".") == 0) || (strcmp(entry->d_name, "..") == 0)) {
@@ -108,18 +115,17 @@ fsize_t print_directory_rec(const char directory[DIR_STR_SIZE], const int *out_f
             strcat(fname, "/");
             strcat(fname, entry->d_name);
             int err = stat(fname, &buf);
-            // stat the file to obtain file size
+            // stat the file to obtain file size in blocks
             if (err < 0) {
                 perror("Error reading file size");
                 _exit(-1);
             }
-            //printf("Size of file: %s is: %d\n", fname, buf.st_size);
-            size += (fsize_t)buf.st_size;
+            size += (fsize_t)buf.st_blocks * 512;
         }
     }
+
     closedir(dir);
-    // there are some discrepancies with du that i believe are because of 
-    // the rounding...
+    // Convert to kilobytes (1024 bytes)
     fsize_t kb = (size + 1023) / 1024;
     print_and_append(kb, directory, out_fd);
 
@@ -169,7 +175,7 @@ void print_bin_content(){
 
 
 
-// function to print how to run the executable
+// Function to print how to run the executable
 void print_usage(const char * bin_name){
     printf("Usage 1: %s [<directory>]\n", bin_name);
     printf("Usage 2: %s [-b]\n", bin_name);
@@ -177,7 +183,7 @@ void print_usage(const char * bin_name){
 
 
 
-// function to actually run the du on `directory`
+// Function to actually run the du on `directory`
 void run_du(char *dir){
     // string that holds precisely DIR_STR_SIZE chars
     char directory[DIR_STR_SIZE];

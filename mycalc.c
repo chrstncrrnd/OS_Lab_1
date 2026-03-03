@@ -34,8 +34,6 @@ void eprint(const char* text){
 }
 
 
-
-
 // Returns the number of digits in the input
 int digits(int input) {
 	int i = 0;
@@ -68,11 +66,13 @@ void itoa(int input, char* buf) {
 				_exit(-1);
 		}
 	}
+
 	// handle edge case of 0
 	if (input == 0){
 		strcpy(buf, "0");
 		return;
 	}
+
 	bool negative = false;
 	if (input < 0) {
 		negative = true;
@@ -101,6 +101,7 @@ void print(const char* text){
 	}
 }
 
+
 // Adds `a` and `b` and panics if overflow
 int add_with_overflow(int a, int b) {
     if (b > 0 && a > INT_MAX - b) {
@@ -114,7 +115,8 @@ int add_with_overflow(int a, int b) {
     return a + b;
 }
 
-// subtracts `b` from `a` and panics if overflow or underflow
+
+// Subtracts `b` from `a` and panics if overflow or underflow
 int sub_with_overflow(int a, int b) {
     if (b > 0 && a < INT_MIN + b) {
         eprint("Subtracted with underflow!\n");
@@ -126,6 +128,7 @@ int sub_with_overflow(int a, int b) {
     }
     return a - b;
 }
+
 
 // Multiplies `a` and `b` and panics if overflow
 int mul_with_overflow(int a, int b) {
@@ -150,7 +153,8 @@ int mul_with_overflow(int a, int b) {
     return a * b;
 }
 
-// divides `a` by `b` and panics if an overflow has occurred
+
+// Divides `a` by `b` and panics if an overflow has occurred
 int div_with_overflow(int a, int b) {
     if (b == 0) {
         eprint("Division by zero!\n");
@@ -164,7 +168,6 @@ int div_with_overflow(int a, int b) {
 }
 
 
-// TODO: Pregunar profe si esto es error
 // Function to print how to use the binary
 void print_usage(const char *bin_name) {
 	print("Usage (1): ");
@@ -299,7 +302,6 @@ void get_line(int fd, char * buffer){
 }
 
 
-// TODO: comprobar edge cases
 void search_history(int n, char * buffer) {
 	int fd = open(log_file, O_RDONLY);
 	char buf[2];
