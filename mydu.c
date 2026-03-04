@@ -121,6 +121,7 @@ fsize_t print_directory_rec(const char directory[DIR_STR_SIZE], const int *out_f
                 perror("Error reading file size");
                 _exit(-1);
             }
+            // flag to either mimic du functionality or sum exact size.
             #ifdef DU_FUNCTIONALITY
             size += (fsize_t)buf.st_blocks * 512;
             #else
