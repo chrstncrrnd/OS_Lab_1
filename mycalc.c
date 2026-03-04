@@ -93,6 +93,20 @@ void itoa(int input, char* buf) {
 }
 
 
+bool is_int(const char* str){
+	size_t start = 0;
+	if (str[0] == '-'){
+		start = 1;
+	}
+	for (size_t i = start; i < strlen(str); ++i){
+		if (str[i] > '9' || str[i] < '0'){
+			return false;
+		}
+	}
+	return true;
+}
+
+
 // Prints `text` in `stdout`
 void print(const char* text){
 	ssize_t err1 = write(STDOUT_FILENO, text,(size_t) strlen(text));
@@ -221,6 +235,11 @@ void append_file(const char* a_s, char op, const char* b_s, const char* r_s) {
 
 // Routine to handle the main mode of the calculator
 void operation_mode(char *argv[]) {
+	if (is_int(argv[1]) == 0 || is_int(argv[3]) == 0){
+		eprint("Parameter error!, numbers should be integers\n");
+		print_usage(argv[0]);
+		_exit(-1);
+	}
 	int a = atoi(argv[1]);
 	int b = atoi(argv[3]);
 	
