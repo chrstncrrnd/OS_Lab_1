@@ -5,6 +5,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string.h>
+
+
 #define DU_FUNCTIONALITY
 #define DIR_STR_SIZE 128
 
@@ -75,7 +77,7 @@ void print_and_append(fsize_t size, const char* directory, const int* fd){
 fsize_t print_directory_rec(const char directory[DIR_STR_SIZE], const int *out_fd) {
     DIR *dir = opendir(directory);
     struct dirent *entry;
-    //    stat_t dir_stat;
+    stat_t dir_stat;
     // we cannot open the directory
     if (dir == NULL) {
         char err_s[DIR_STR_SIZE + 32] = "";
@@ -84,15 +86,13 @@ fsize_t print_directory_rec(const char directory[DIR_STR_SIZE], const int *out_f
         perror(err_s);
         _exit(-1);
     }
-    //
-    //    // Get the size of the directory itself (inode block)
-    //    if (stat(directory, &dir_stat) < 0) {
-    //        perror("Error reading directory size");
-    //        _exit(-1);
-    //    }
-    //
-    //    fsize_t size = (fsize_t)dir_stat.st_blocks * 512;
-    fsize_t size = 0;
+    // Get the size of the directory itself (inode block)
+    if (stat(directory, &dir_stat) < 0) {
+        perror("Error reading directory size");
+        _exit(-1);
+    }
+   
+    fsize_t size = (fsize_t)dir_stat.st_blocks * 512;
 
     while((entry = readdir(dir)) != NULL) {
         // 4 for directories
