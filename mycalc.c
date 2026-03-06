@@ -28,6 +28,7 @@ const char *log_file = "mycalc.log";
 // Prints `text` in `stderr`
 void eprint(const char* text){
 	ssize_t err1 = write(STDERR_FILENO, text,(size_t) strlen(text));
+  // exit if error
 	if (err1 < 0){
 		_exit(-1);
 	}
@@ -38,7 +39,7 @@ void eprint(const char* text){
 int digits(int input) {
 	int i = 0;
 	for (; input > 0; input /= 10) {
-		i++; // TODO preguntar profe sobre esto y si debe poner el print usage.
+		i++;
 	}
 	return i;
 }
@@ -73,6 +74,7 @@ void itoa(int input, char* buf) {
 		return;
 	}
 
+  //negative case
 	bool negative = false;
 	if (input < 0) {
 		negative = true;
@@ -80,6 +82,7 @@ void itoa(int input, char* buf) {
 	}
 
 	int digs = digits(input);
+  // loop over al ldigits
 	for (int i = digs; input > 0; input /= 10) {
 		buf[--i] = (char) (input % 10) + '0';
 	}
@@ -92,13 +95,15 @@ void itoa(int input, char* buf) {
 	}
 }
 
-
+// function to see if a string is an integer (i.e. no letters or non digits in string)
 bool is_int(const char* str){
 	size_t start = 0;
 	if (str[0] == '-'){
 		start = 1;
 	}
+  // loop over each character in string
 	for (size_t i = start; i < strlen(str); ++i){
+    // make sure that they are digits
 		if (str[i] > '9' || str[i] < '0'){
 			return false;
 		}
@@ -204,11 +209,13 @@ void append_file(const char* a_s, char op, const char* b_s, const char* r_s) {
 
 	char buf[BUFSIZE] = "Operation: ";
 
-	
+	// string to hold the operation
 	char o_s[2];
 	o_s[0] = op;
 	o_s[1] = '\0';
-	
+
+
+  // generating the string that we will write to the file
 	strcat(buf, a_s);
 	strcat(buf, " ");
 	strcat(buf, o_s);
@@ -217,7 +224,8 @@ void append_file(const char* a_s, char op, const char* b_s, const char* r_s) {
 	strcat(buf, " = ");
 	strcat(buf, r_s);
 	strcat(buf, "\n");
-	
+
+  // write it to the file
 	ssize_t err1 = write(fd, buf,(size_t) strlen(buf));
 	if (err1 < 0) {
 		eprint("Error writing to log file!\n");
@@ -235,11 +243,13 @@ void append_file(const char* a_s, char op, const char* b_s, const char* r_s) {
 
 // Routine to handle the main mode of the calculator
 void operation_mode(char *argv[]) {
+  // make sure that both arguments are integer strings
 	if (is_int(argv[1]) == 0 || is_int(argv[3]) == 0){
 		eprint("Parameter error!, numbers should be integers\n");
 		print_usage(argv[0]);
 		_exit(-1);
 	}
+  // convert arguments to ints
 	int a = atoi(argv[1]);
 	int b = atoi(argv[3]);
 	
@@ -271,19 +281,18 @@ void operation_mode(char *argv[]) {
 			res = a / b;
 			break;
 		default:
-		// TODO: preguntar profe sobre esto
 			eprint("Parameter error!, use +, -, x or /\n");
 			_exit(PARAM_ERROR_CODE);
 	}
 
 	char buf[BUFSIZE] = "Operation: ";
-
+  // LHS string
 	char a_s[16] = "";
 	itoa(a, a_s);
-
+  // RHS string
 	char b_s[16] = "";
 	itoa(b, b_s);
-
+  // result string
 	char r_s[16] = "";
 	itoa(res, r_s);
 	
@@ -304,14 +313,17 @@ void operation_mode(char *argv[]) {
 	append_file(a_s, op, b_s, r_s);
 }
 
-
+// get the next line from where we are pointing to in the file fd
 void get_line(int fd, char * buffer){
 	char buf[2];
 	ssize_t n_read;
+  // check that we aren't going to reach the end of the file
 	while( (n_read = read(fd, buf, 1)) > 0){
+    // break if we have a newline (reached the end of the line)
 		if (buf[0] == '\n'){
 			break;
 		}
+    // append to buffer what we have just read
 		strcat(buffer, buf);
 	}
 	if (n_read < 0){
@@ -321,27 +333,42 @@ void get_line(int fd, char * buffer){
 }
 
 
+// function to search the file mycalc.log
 void search_history(int n, char * buffer) {
+  // open the log file
 	int fd = open(log_file, O_RDONLY);
+  // we are reading one character at a time, so we need a buffer of two elements
+  // because of null-terminated strings
 	char buf[2];
+  // we keep track of how many bytes we have read
 	ssize_t n_read;
+  // how many lines have we read
 	int lines_read = 0;
+  // loop while we are still reading from the file
 	while( (n_read = read(fd, buf, 1)) > 0){
 		if (strcmp(buf, "\n") == 0){
+      // increment lines_read when we read a new line character
 			lines_read += 1;
 		}
+    // the next line is the one we want
 		if (lines_read == n-1){
+      // edge case for n = 1
 			if (lines_read == 0){
+        // since we pushed forward the pointer at the beginning of the while loop,
+        // we need to push it back one
 				long err = lseek(fd, -1, SEEK_CUR);
 				if (err < 0){
 					eprint("Couldn't seek back on log file!\n");
 					_exit(FILE_READ_ERROR_CODE);	
 				}
 			}
+      // get the current line and exit
 			get_line(fd, buffer);
       return;
 		}
 	}
+
+  // we havent read any file
 	if (n_read < 0){
 		eprint("Error reading file\n");
 		_exit(FILE_READ_ERROR_CODE);
@@ -354,10 +381,12 @@ void history_mode(char *argv[]) {
 	int n = atoi(argv[2]);
 	char buffer[BUFSIZE] = "";
 	search_history(n, buffer);
+  // if we have not found the entry
 	if (strcmp(buffer, "") == 0){
 		eprint("History entry not found\n");
 		_exit(HISTORY_NOT_FOUND_ERROR);
 	} else {
+    // print out the result
 		print("Line ");
 		char n_str[16];
 
@@ -371,12 +400,13 @@ void history_mode(char *argv[]) {
 
 
 int main(int argc, char *argv[]) {
+  // check we have a valid number of arguments
 	if (argc != 4 && argc != 3){
 		char *bin_name = argv[0];
 		print_usage(bin_name);
 		return 1;
 	}
-
+  // based on the number of arguments, what do we do
   	switch (argc){
 		case 3:
 			if (strcmp(argv[1], "-b") == 0) {
