@@ -8,7 +8,7 @@
 
 
 #define DU_FUNCTIONALITY
-#define DIR_STR_SIZE 128
+#define DIR_STR_SIZE 256
 
 typedef struct stat stat_t;
  
