@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
+#include <errno.h>
 
 #define FATAL_ERROR_CODE 		-1
 #define DIV_ZERO_ERROR_CODE 	-1
@@ -103,6 +104,35 @@ bool is_int(const char* str){
 			return false;
 		}
 	}
+	return true;
+}
+
+
+// Safely converts a string to an int using strtol.
+// Returns true and stores the result in *out on success.
+// Returns false if the string is empty, contains non-numeric characters,
+// or the value is outside the range [INT_MIN, INT_MAX].
+bool safe_atoi(const char *str, int *out) {
+	if (str == NULL || str[0] == '\0') {
+		return false;
+	}
+	char *endptr;
+	errno = 0;
+	long val = strtol(str, &endptr, 10);
+	if (errno == ERANGE) {
+		return false;
+	}
+	// Ensure the entire string was consumed:
+	// endptr == str means no digits were found (e.g. "+" or "-" alone);
+	// *endptr != '\0' means trailing non-numeric characters (e.g. "42abc").
+	if (endptr == str || *endptr != '\0') {
+		return false;
+	}
+	// Ensure the long value fits in an int
+	if (val > (long)INT_MAX || val < (long)INT_MIN) {
+		return false;
+	}
+	*out = (int)val;
 	return true;
 }
 
@@ -235,13 +265,12 @@ void append_file(const char* a_s, char op, const char* b_s, const char* r_s) {
 
 // Routine to handle the main mode of the calculator
 void operation_mode(char *argv[]) {
-	if (is_int(argv[1]) == 0 || is_int(argv[3]) == 0){
+	int a, b;
+	if (!safe_atoi(argv[1], &a) || !safe_atoi(argv[3], &b)){
 		eprint("Parameter error!, numbers should be integers\n");
 		print_usage(argv[0]);
 		_exit(-1);
 	}
-	int a = atoi(argv[1]);
-	int b = atoi(argv[3]);
 	
 	if (strlen(argv[2]) != 1) {
 		eprint("Parameter error!, use +, -, x or /\n");
@@ -351,7 +380,12 @@ void search_history(int n, char * buffer) {
 
 // Routine to handle the history mode of the calculator.
 void history_mode(char *argv[]) {
-	int n = atoi(argv[2]);
+	int n;
+	if (!safe_atoi(argv[2], &n)) {
+		eprint("Parameter error!, history entry should be an integer\n");
+		print_usage(argv[0]);
+		_exit(-1);
+	}
 	char buffer[BUFSIZE] = "";
 	search_history(n, buffer);
 	if (strcmp(buffer, "") == 0){
